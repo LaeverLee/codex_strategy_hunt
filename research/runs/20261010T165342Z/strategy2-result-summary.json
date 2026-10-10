@@ -1,0 +1,69 @@
+{
+  "version": 2,
+  "train": {
+    "return_pct": -98.0278,
+    "drawdown_pct": 98.0305,
+    "win_rate": 19.37,
+    "profit_factor": 0.4966,
+    "trade_count": 4088,
+    "sharpe_ratio": -6.9879,
+    "annualized_return_pct": -68.6444,
+    "fees": 2989.3025,
+    "funding_paid": 42.2583,
+    "ambiguous_bars": 0,
+    "return_currency": "BTC",
+    "usd_portfolio_return_pct": -92.6997
+  },
+  "validation": {
+    "return_pct": -78.443,
+    "drawdown_pct": 78.7034,
+    "win_rate": 18.11,
+    "profit_factor": 0.4078,
+    "trade_count": 1491,
+    "sharpe_ratio": -10.7587,
+    "annualized_return_pct": -78.3562,
+    "fees": 2421.9758,
+    "funding_paid": 16.1037,
+    "ambiguous_bars": 0,
+    "return_currency": "BTC",
+    "usd_portfolio_return_pct": -52.396
+  },
+  "test": {
+    "return_pct": -88.7498,
+    "drawdown_pct": 88.8033,
+    "win_rate": 17.59,
+    "profit_factor": 0.3846,
+    "trade_count": 2593,
+    "sharpe_ratio": -11.1509,
+    "annualized_return_pct": -70.8192,
+    "fees": 3047.1204,
+    "funding_paid": -0.3044,
+    "ambiguous_bars": 0,
+    "return_currency": "BTC",
+    "usd_portfolio_return_pct": -90.0338
+  },
+  "cost_stress": {
+    "return_pct": -92.7841,
+    "drawdown_pct": 92.7925,
+    "win_rate": 14.65,
+    "profit_factor": 0.2752,
+    "trade_count": 2007,
+    "sharpe_ratio": -12.8996,
+    "annualized_return_pct": -77.2821,
+    "fees": 3206.6022,
+    "funding_paid": 0.8753,
+    "ambiguous_bars": 0,
+    "return_currency": "BTC",
+    "usd_portfolio_return_pct": -93.6077
+  },
+  "qualified": false,
+  "thresholds": {
+    "min_return_pct": 50.0,
+    "min_trades": 30,
+    "min_pf": 1.1,
+    "min_sharpe": 0.5,
+    "max_dd_pct": 15.0,
+    "policy": "net_btc_cumulative_50_v1"
+  },
+  "paper_ready": false
+}

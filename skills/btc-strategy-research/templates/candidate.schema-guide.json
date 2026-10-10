@@ -40,5 +40,6 @@
       "max_hold_bars": null
     }
   },
-  "code": "REPLACE_WITH_FULL_GET_SIGNALS_AND_GET_EXITS_PYTHON_CODE"
+  "code": "REPLACE_WITH_FULL_GET_SIGNALS_AND_GET_EXITS_PYTHON_CODE",
+  "parent_origin": null
 }

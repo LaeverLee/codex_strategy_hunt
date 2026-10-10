@@ -14,7 +14,8 @@
 4. 核對遠端引擎／接收程式版本、兩個 OpenClaw 排程、佇列、已完成结果及当前 Codex 排程。
 5. 讀已有研究 state 與來源指紋，避免重複搜尋相同拒絕來源。
 6. 按來源證據生成候選，通過 dry-run 再 submit。queued=true 才能報告已排隊。
-7. 核實新紀錄及第一個真實候選整合後，備份並停用舊搜尋；回測排程保留。
+7. 舊搜尋已在策略2核對後停用；核對即時狀態並維持停用，回測排程保留。
+8. 讀docs/SUPABASE_DATA_MODEL.md與docs/RECOVERY_AND_QUERIES.md；不能只靠strategy_hunt.status判回測完成。
 
 ## 固定限制
 

@@ -1,0 +1,8 @@
+{
+  "url": "https://github.com/PeetCrypto/freqtrade-stuff/blob/f6c38def0b2fe01d8d42e47740cdeab53511527b/SupertrendStrategy.py",
+  "commit": "f6c38def0b2fe01d8d42e47740cdeab53511527b",
+  "status": "rejected",
+  "reason": "missing_btc_deployment_and_execution_context",
+  "details_zh": "1h多重Supertrend方向、StochRSI及EMA90过滤，訊號退出，99%止損及100倍ROI被來源註解為inactive，但非真正關閉。缺BTC專用實際配置、原成交設定及pandas_ta版本，不能把原多幣USDT結果當BTC反向合約結果。保留可研究規則，尚未生成可信完整重現。",
+  "source_hash": "8b39ab2f256898d62a73d8ac44ad39d827ad22c8083e6a9509a78295f3d2a090"
+}

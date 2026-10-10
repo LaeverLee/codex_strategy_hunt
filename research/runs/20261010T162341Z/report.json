@@ -1,0 +1,36 @@
+{
+  "run_id": "codex_20261010T162341Z",
+  "started_at": "2026-10-10T16:23:41.964Z",
+  "finished_at": "2026-10-10T16:25:39.200966+00:00",
+  "generator": "Codex",
+  "keyword": "signal_exit_trend_and_rsi_macd",
+  "model_calls": 0,
+  "pipeline_revision": "codex-direct-v1",
+  "created": [],
+  "attempts": [
+    {
+      "url": "https://github.com/PeetCrypto/freqtrade-stuff/blob/f6c38def0b2fe01d8d42e47740cdeab53511527b/SupertrendStrategy.py",
+      "commit": "f6c38def0b2fe01d8d42e47740cdeab53511527b",
+      "source_hash": "8b39ab2f256898d62a73d8ac44ad39d827ad22c8083e6a9509a78295f3d2a090",
+      "status": "rejected",
+      "reason": "missing_btc_deployment_and_execution_context",
+      "details_zh": "1h多重Supertrend方向、StochRSI及EMA90过滤，訊號退出，99%止損及100倍ROI被來源註解為inactive，但非真正關閉。缺BTC專用實際配置、原成交設定及pandas_ta版本，不能把原多幣USDT結果當BTC反向合約結果。保留可研究規則，尚未生成可信完整重現。"
+    },
+    {
+      "url": "https://nirius.dev/projects/freqtrade/report.pdf",
+      "commit": null,
+      "source_hash": "2306933dd24be4257991246f35e2d155d8a12c55945baddc2ad8edd728eccb24",
+      "status": "rejected",
+      "reason": "optimized_portfolio_result_not_reproducible_btc_candidate",
+      "details_zh": "30m RSI/MACD預設範例，雙向、固定10%ROI與10%止損；作者結果是多幣USDT線性合約、3同時持倉、1m細節及hyperopt後績效。報告未列重現該結果所需完整最終參數；不可將預設參數當最佳策略。報告52.66%為組合USDT收益，回撤38.24%，不代表BTC計價達50%，且作者指出不及同期買入持有。保留作規則研究，不提交為已重現績效策略。"
+    }
+  ],
+  "queued": false,
+  "backtested": false,
+  "legacy_search_disabled": false,
+  "delivery": {
+    "journal_synced": true,
+    "discord_http_status": 204,
+    "delivered": true
+  }
+}

@@ -36,3 +36,7 @@ description: 由 Codex 直接研究 BTC 自動交易策略，閱讀與翻譯來�
 使用者已授權每輪搜尋結果送至既有 Strategy Hunt Webhook，回測結果送至既有回測 Webhook。僅從私密設定讀取密鑰；沒有可用私密設定則記錄通知未送達並提出所缺整合資訊，不猜密鑰。回報以 HTTP 回應驗證，避免同輪重複傳送。
 
 更新 research-codex/state.json，記錄來源指紋、研究家族、候選狀態、遠端提交與通知事件。排程不重疊；沒有可處理變化時避免在 Codex 對話重複狀態訊息，Discord 仍依已授權規則每輪回報。
+
+## 資料模型與恢復
+
+提交前讀取 [Supabase 存放邏輯](references/Supabase資料模型與存放流程.md)，查詢與重試讀取 [接手驗證及恢復](references/接手驗證與恢復.md)。外部來源的首次受控移植可使用 parent_origin=external_source、parent_version=null；必填 changes，且在 source_review 記錄母來源及差異，不冒稱完整重現。已登記策略的變體仍必須引用有效 parent_version。

@@ -1,0 +1,111 @@
+{
+  "submission_id": "codex-20261010T163842Z-dual-momentum-1h",
+  "generator": "Codex",
+  "research_mode": "controlled_variant",
+  "parent_version": null,
+  "parent_origin": "external_source",
+  "changes": [
+    {
+      "field": "market_contract",
+      "from": "BTC_USDT source futures",
+      "to": "BTCUSD_PERP inverse",
+      "reason": "Existing dataset/engine; explicitly study transfer rather than claim full reproduction"
+    },
+    {
+      "field": "position_fraction",
+      "from": 1.0,
+      "to": 0.3,
+      "reason": "Existing engine risk setting"
+    },
+    {
+      "field": "cost_execution_model",
+      "from": "source commission 0.075%, Pine execution",
+      "to": "existing next-open costs/funding and delayed reversal semantics",
+      "reason": "Existing research engine"
+    },
+    {
+      "field": "warmup_bars",
+      "from": "10-bar indicator requirement",
+      "to": 50,
+      "reason": "Engine minimum warmup"
+    }
+  ],
+  "keyword": "dual_momentum_signal_exit",
+  "title": "BTC 1h Dual Momentum 5/10 source-based inverse-contract research variant",
+  "source": {
+    "url": "https://github.com/fmzquant/strategies/blob/7853bb2bf262c4567ac238d3552d97f0e50cb801/%E5%8F%8C%E5%8A%A8%E9%87%8F%E7%AD%96%E7%95%A5Dual-Momentum-Strategy.md",
+    "commit": "7853bb2bf262c4567ac238d3552d97f0e50cb801"
+  },
+  "translation_zh": "# 雙動量 BTC 1h：來源支持的研究變體\n\n來源：FMZ收錄 QuantCT 的 Momentum Strategy Idea，固定GitHub commit見source.json。\n\n原始規則：以收盤價減5根前收盤價為快速動量、減10根前收盤價為慢速動量。兩者大於0進多；任一小於0退出多；兩者小於0進空；任一大於0退出空。剛好0不觸發該嚴格比較。預設long_only=false、use_sl=false，因此不加停損。來源backtest指定BTC_USDT、1h；文字敘述另外推薦日線／4h，不把建議週期冒充實際回測設定。\n\n這是受控研究變體，不是完整原環境績效重現：原市場為BTC_USDT期貨、100%權益倉位與0.075%佣金；本實驗使用BTCUSD_PERP反向合約、引擎30%倉位與現有費用／滑價／funding。保留所有進出場方向及5/10參數，未加做空（原本已允許）、未調參、未加停損。\n\n成交與反轉：引擎採收盤決策、下一根開盤；其關閉後可能延後再開倉，不保證Pine同時反轉的完全一致。暖機50根為引擎需求；不是原策略參數。所有差異列為評估模型限制。source_review只批准此已宣告變體的規則對照，不宣稱第三方獨立審核。\n\n尚未回測，不宣稱盈利或达到50%門檻。策略在盤整可能頻繁虧損、無停損可能回撤較大。\n",
+  "code": "import numpy as np\n\ndef get_signals(df):\n    fast = df.close - df.close.shift(5)\n    slow = df.close - df.close.shift(10)\n    return ((slow > 0) & (fast > 0)).to_numpy(dtype=bool), ((slow < 0) & (fast < 0)).to_numpy(dtype=bool)\n\ndef get_exits(df):\n    fast = df.close - df.close.shift(5)\n    slow = df.close - df.close.shift(10)\n    return ((slow < 0) | (fast < 0)).to_numpy(dtype=bool), ((slow > 0) | (fast > 0)).to_numpy(dtype=bool)\n",
+  "source_review": {
+    "approved": true,
+    "reviewer": "Codex-direct-source-comparison",
+    "full_reproduction": false,
+    "checks": [
+      "5/10 bar momentum preserves Pine mom(close,n)",
+      "Strict >0/<0 entry and exit inequalities matched",
+      "Original defaults allow both directions and disable optional stop",
+      "1h taken from BTC_USDT backtest header, not generic framework list",
+      "Contract/position/cost/reversal differences disclosed as controlled_variant"
+    ],
+    "evidence": [
+      "Source Inputs fast_period=5 slow_period=10 long_only=false use_sl=false",
+      "Source enter_long/exit_long/enter_short/exit_short comparisons",
+      "Source BTC_USDT 1h header and 100% equity position declaration"
+    ],
+    "changes": [
+      {
+        "field": "market_contract",
+        "from": "BTC_USDT source futures",
+        "to": "BTCUSD_PERP inverse",
+        "reason": "Existing dataset/engine; explicitly study transfer rather than claim full reproduction"
+      },
+      {
+        "field": "position_fraction",
+        "from": 1.0,
+        "to": 0.3,
+        "reason": "Existing engine risk setting"
+      },
+      {
+        "field": "cost_execution_model",
+        "from": "source commission 0.075%, Pine execution",
+        "to": "existing next-open costs/funding and delayed reversal semantics",
+        "reason": "Existing research engine"
+      },
+      {
+        "field": "warmup_bars",
+        "from": "10-bar indicator requirement",
+        "to": 50,
+        "reason": "Engine minimum warmup"
+      }
+    ],
+    "parent_origin": "external_source"
+  },
+  "spec": {
+    "market": "BTC",
+    "timeframe": "1h",
+    "directions": "long_short",
+    "hypothesis": "Two-horizon directional momentum may capture BTC trends; no profitability assumed",
+    "entry_rules": "Long if close-close[5]>0 AND close-close[10]>0; short if both <0",
+    "exit_rules": "Exit long if either momentum <0; exit short if either >0; original optional stop disabled",
+    "failure_conditions": [
+      "Whipsaw in ranges",
+      "No hard stop may produce large drawdown",
+      "Inverse market transfer and execution differences"
+    ],
+    "evidence_quotes": [
+      "fast_period = input(title=\"Fast Period\", defval=5)",
+      "slow_period = input(title=\"Slow Period\", defval=10)",
+      "use_sl = input(title=\"Use Stop-Loss\", defval=false)"
+    ],
+    "warmup_bars": 50,
+    "signal_exit": true,
+    "risk": {
+      "stop_atr": null,
+      "take_atr": null,
+      "max_hold_bars": null
+    }
+  },
+  "export_note": "Evidence manifest only; source full text remains private/local and remote; this is NOT a submit-ready bundle."
+}

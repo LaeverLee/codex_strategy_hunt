@@ -1,4 +1,5 @@
--- DRAFT: apply only to the NEW OpenClaw Strategy Lab project.
+-- HISTORICAL REFERENCE ONLY: these tables already exist. Do not execute on the live project.
+-- Read schema-columns.snapshot.json for the verified 2026-10-11 column snapshot.
 -- Existing engine compatibility tables; no historical rows are imported.
 begin;
 create table public.ctrl_manager (

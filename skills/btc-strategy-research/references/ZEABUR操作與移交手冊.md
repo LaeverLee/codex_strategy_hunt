@@ -96,7 +96,7 @@ python -X utf8 <SKILL>/scripts/zeabur_bridge.py result --config <CONFIG> --versi
 
 - submission_id：最多 120 字元，只用英數、底線與連字號。同一次提交重試使用同一 ID 與相同內容；內容變更必須換 ID。
 - generator：固定 Codex；表示生成工作由本次 Codex 完成，不是 MiniMax。
-- research_mode：reproduction 或 controlled_variant。變體必填已登記的 parent_version 與 changes。
+- research_mode：reproduction 或 controlled_variant。變體必填 changes。已登記母策略的變體填 parent_version；第一次從外部原始來源移植時可填 parent_version=null、parent_origin=external_source，並在 source_review 保存來源母體與所有差異。parent_origin 不是資料庫獨立欄位。
 - source：url、text，以及可選 commit／files。text 保留完整必要來源，不能僅存搜尋摘要。
 - translation_zh：中文規則、來源段落對應、所有參數、缺失、假設與改動。
 - source_review：approved=true、checks 與 evidence。此欄位是 Codex 另一步審查的紀錄，不代表第二個獨立模型或實盤證明。

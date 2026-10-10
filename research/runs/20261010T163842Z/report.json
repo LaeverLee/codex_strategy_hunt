@@ -1,0 +1,20 @@
+{
+  "run_id": "codex_20261010T163842Z",
+  "finished_at": "2026-10-10T16:44:01.544421+00:00",
+  "generator": "Codex",
+  "model_calls": 0,
+  "queued": true,
+  "version": 2,
+  "database_verified": true,
+  "candidate": {
+    "version": "2",
+    "research_mode": "controlled_variant",
+    "review_status": "approved",
+    "code_hash": "5756c8dc497572345e4793f44e1180bbe213c340308b68147fd9879c85a508ca"
+  },
+  "hunt_status": "discovered",
+  "legacy_search_disabled": true,
+  "backtest_enabled": true,
+  "result_available": false,
+  "discord_http_status": 204
+}

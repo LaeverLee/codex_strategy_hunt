@@ -16,14 +16,14 @@
 
 ## 策略1
 
-僅有原先生成候選1，review_status=rejected、backtest/source status=source_review_failed。原來源為joseporiolcarne/backtraderalerts的src/strategies/rsi_crossover.py，commit20c45d2c8bbdb6fb4452ca17dc78667ac6bc343d。原規則只做多，生成器加入了不存在的做空與退出；4h來自框架支援列表而非策略設定。
+原先生成候選1，review_status=rejected、backtest/source status=source_review_failed。原來源為joseporiolcarne/backtraderalerts的src/strategies/rsi_crossover.py，commit20c45d2c8bbdb6fb4452ca17dc78667ac6bc343d。原規則只做多，生成器加入了不存在的做空與退出；4h來自框架支援列表而非策略設定。
 
 保存的debug績效：train -6.0117%，validation -4.1422%，test -10.0352%、DD19.3435%、24交易、PF0.6869、Sharpe -0.3933；1.5倍成本return -10.4563%。這不是原始策略有效績效，不用來評估來源优劣，也不能列為盈利候選。
 
 ## 尚未完成／不可宣稱
 
-- 沒有第一個真实Codex候選的正式提交與全流程回測。
-- 尚未停用旧OpenClaw搜尋的確定證據；按第一候選核對後切換，接手先重查。
+- 策略2已正式提交、核DB且完成回測，qualified=false；無合格策略。
+- 舊OpenClaw搜尋已備份及停用，回測保留；接手仍須重查即時狀態。
 - 日線、持有時間動態ROI、trailing stop、限價成交、風險匹配基準等尚未支援。
 - 買入持有／固定趨勢基準與完整參數穩健性還是計畫。
 - 前向模拟和實盤未啟動；无已验证合格盈利策略。
@@ -40,3 +40,9 @@
 曾查到164research_runs、2856source_attempts、1candidate、7evaluation；是較早查詢快照，不是当下计数。source_attempts包含重複來源。
 
 本repo的engine/lab_runtime.py是去除MiniMax/hunt dispatcher的移交版，尚未取代遠端runtime；其他engine文件來自部署工作副本。必須核對遠端hash再做部署，不能一鍵覆蓋現有系统。
+
+## 最近更新
+
+第三輪首個真實Codex候選策略2（1h雙動量5/10、controlled_variant、外部母来源、parent_version=null）通過dry-run並queued=true，Supabase核對完成。舊搜尋停用、回測保留。第四輪核實回測完成：validation -78.443%、test -88.7498%、test DD88.8033%、cost_stress -92.7841%，qualified=false。DB的strategy_hunt仍discovered但已有七組evaluation，不能用status代替結果。第四輪日線Donchian/EMA/ADX來源因週期、追蹤及反轉能力拒絕，0新候選；通知HTTP204。
+
+使用者後續要求Codex回測排程Skill，已提供計畫，尚未啟用；本次只優化找策略GitHub移交。Supabase資料模型、99欄實際快照、恢復/查詢與最近三輪證據已補齊。

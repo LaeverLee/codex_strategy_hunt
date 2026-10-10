@@ -1,5 +1,5 @@
 {
-  "last_run": "codex_20261010T160440Z",
+  "last_run": "codex_20261010T165342Z",
   "last_run_status": "completed_zero_candidates",
   "last_delivery": {
     "journal_synced": true,
@@ -7,13 +7,24 @@
     "delivered": true
   },
   "source_hashes": [
+    "095a080cab932abde368f12b4ceb8562d140b3d3fe34f97e86102d7ff872df06",
+    "2306933dd24be4257991246f35e2d155d8a12c55945baddc2ad8edd728eccb24",
+    "8b39ab2f256898d62a73d8ac44ad39d827ad22c8083e6a9509a78295f3d2a090",
     "df8dabaecf7fcb6f5ae77a9bafa9284fa9047c84f8d757fc11b4ecc68d4332f1",
+    "ea1abff183d7a666e8403f045a0f2eb80681ddeb56419ba6da936606e33e1640",
     "fb12724b3c5368ba2cff27480e6bc8c832c13209c178555636f3047d4f5784d3"
   ],
   "last_sources": [
-    "https://github.com/Superior-Trade/superior-skills/blob/9d41db54b231f77e35610a73230eaeffcb456215/skills/bollinger-reverter-4h/SKILL.md",
-    "https://gist.github.com/sonnyparlin/558d486a1d996e42759d3f68dbc384c0"
+    "https://github.com/K8shav24/BTC-SatoshiBreakout/tree/5dce6130b93d9314539754c0862ec41f0eaf9f76"
   ],
-  "integration_status": "health_and_dry_run_verified_real_candidate_pending",
-  "next_research_hint": "Prefer full BTC strategy with signal exit or static stop/take, explicitly exclude trailing/ROI ladders; no simplification labelled reproduction."
+  "integration_status": "real_candidate_queued_and_database_verified",
+  "next_research_hint": "Seek lower turnover source with fully supported timeframe and exits; no parameter selection using strategy2 historical test results.",
+  "legacy_search_disabled": true,
+  "last_submission_id": "codex-20261010T163842Z-dual-momentum-1h",
+  "last_version": 2,
+  "last_backtest": {
+    "version": 2,
+    "qualified": false,
+    "summary_file": "runs/20261010T165342Z/strategy2-result-summary.json"
+  }
 }

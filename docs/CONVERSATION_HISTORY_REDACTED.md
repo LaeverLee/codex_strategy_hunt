@@ -99,3 +99,7 @@ SSH密碼與完整DiscordWebhook已刪除。登入會話、私鑰、APIkey與tok
 - 旧archive中的OpenClaw/MiniMax設計不能覆蓋使用者最新Codex要求。
 - 各自DiscordWebhook不得統一；disabled announce仍須每輪Webhook實發。
 - 完整對話未取得的內容不補寫成逐字紀錄；秘密不入Git。
+
+## 後續補充（2026-10-11）
+
+使用者要求先提供Codex回測排程Skill計畫，嚴格遵守既有回測規則；計畫已提供，尚未授權啟用。使用者詢問是否須納入Supabase各表意義與存放流程，確認這是必要移交內容；後續指出找策略GitHub也需要完整補齊，並指示「請你先優化 找策略 的github」。本次因此補文件、同步外部母來源變體接收支援與最近研究證據；未修改遠端回測規則、排程或資料庫schema。

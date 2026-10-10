@@ -27,8 +27,10 @@ def main():
         raise ValueError('Only Codex-generated bundles accepted')
     if bundle.get('research_mode') not in {'reproduction', 'controlled_variant'}:
         raise ValueError('Explicit research_mode required')
-    if bundle['research_mode'] == 'controlled_variant' and (not bundle.get('parent_version') or not bundle.get('changes')):
-        raise ValueError('Variants require parent_version and changes')
+    if bundle['research_mode'] == 'controlled_variant' and not bundle.get('changes'):
+        raise ValueError('Variants require explicit changes')
+    if bundle['research_mode'] == 'controlled_variant' and not bundle.get('parent_version') and bundle.get('parent_origin') != 'external_source':
+        raise ValueError('Variant needs a registered parent or explicit external_source lineage')
     review = bundle['source_review']
     if review.get('approved') is not True or not review.get('checks') or not review.get('evidence'):
         raise ValueError('Completed source review and evidence required')
@@ -57,7 +59,7 @@ def main():
     from lab_runtime import Backend
     from lab_records import sync_all
     backend = Backend()
-    if bundle['research_mode'] == 'controlled_variant':
+    if bundle['research_mode'] == 'controlled_variant' and bundle.get('parent_version'):
         parent = str(int(bundle['parent_version']))
         if not backend.request('research_candidates', query='?version=eq.' + parent + '&limit=1'):
             raise ValueError('Parent candidate must be registered before variant')
@@ -104,7 +106,7 @@ def main():
                     'code_hash': hashlib.sha256(code.encode()).hexdigest(), 'model': 'Codex',
                     'source_review': review, 'pipeline_revision': 'codex-direct-v1', 'db_committed': False,
                     'research_mode': bundle['research_mode'], 'parent_version': bundle.get('parent_version'),
-                    'changes': bundle.get('changes', [])}
+                    'changes': bundle.get('changes', []), 'parent_origin': bundle.get('parent_origin')}
         atomic_json(path.with_suffix('.json'), metadata)
         temporary = path.with_suffix('.py.tmp')
         temporary.write_text(code, encoding='utf-8')

@@ -12,7 +12,8 @@
 4. [操作手冊](docs/Codex策略研究Zeabur操作與移交手冊.md)：連線、提交、回測、通知、恢復。
 5. [新 Agent 啟動步驟](docs/BOOTSTRAP.md)：本 repo 的可執行命令與認證設定。
 6. [對話交接紀錄](docs/CONVERSATION_HISTORY_REDACTED.md)：使用者問題、答覆脈絡與修正。
-7. [已知限制與下一步](docs/KNOWN_LIMITATIONS_AND_NEXT_STEPS.md)。
+7. [Supabase存放與欄位](docs/SUPABASE_DATA_MODEL.md)、[查詢與恢復](docs/RECOVERY_AND_QUERIES.md)。
+8. [已知限制與下一步](docs/KNOWN_LIMITATIONS_AND_NEXT_STEPS.md)。
 
 先核實目前服務狀態，再繼續研究；不要從頭重建 Supabase、覆蓋現有策略或把規劃功能當成已實作。
 
@@ -37,7 +38,7 @@ Codex 搜尋並閱讀來源 → 中文翻譯與完整規格 → 生成程式 →
 | docs | 最新計畫、操作手冊、開機步驟、對話與限制 |
 | docs/archive | 歷史掃描及部署報告；只作背景證據 |
 | memory | 使用者決策、狀態與研究快照 |
-| research/runs | 第一輪 Codex 研究紀錄、來源指紋及中文分析 |
+| research/runs | 最近 Codex 研究紀錄、來源指紋及中文分析 |
 | config | 現有 schema 參考；不可直接套用到已存在資料庫 |
 | tests | 本地可執行的政策、格式及無模型依賴檢查 |
 
@@ -50,7 +51,7 @@ Codex 搜尋並閱讀來源 → 中文翻譯與完整規格 → 生成程式 →
 - Codex 研究排程 btc-codex 已建立，每 15 分鐘；這個排程位於原電腦／原對話，不會跟 repo 自動轉移。
 - 第一輪直接閱讀兩個來源，均因引擎不支持完整退出行為而拒絕；零候選、未提交回測。
 - 該輪 journal 已同步新 Supabase；搜尋結果 Discord HTTP 204。
-- 第一個真實 Codex 候選的正式提交及完整回測 **尚未驗證**。舊搜尋排程是否仍啟用須重查。
+- 策略2正式queued=true、資料庫核對及七組回測已驗證，qualified=false。舊搜尋已停用，既有回測保留；接手需重查即時狀態。
 - 沒有已驗證的合格盈利策略，策略 1 來源審查失敗。
 
 ## 憑證与可攜性
