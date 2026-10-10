@@ -1,0 +1,19 @@
+{
+  "last_run": "codex_20261010T160440Z",
+  "last_run_status": "completed_zero_candidates",
+  "last_delivery": {
+    "journal_synced": true,
+    "discord_http_status": 204,
+    "delivered": true
+  },
+  "source_hashes": [
+    "df8dabaecf7fcb6f5ae77a9bafa9284fa9047c84f8d757fc11b4ecc68d4332f1",
+    "fb12724b3c5368ba2cff27480e6bc8c832c13209c178555636f3047d4f5784d3"
+  ],
+  "last_sources": [
+    "https://github.com/Superior-Trade/superior-skills/blob/9d41db54b231f77e35610a73230eaeffcb456215/skills/bollinger-reverter-4h/SKILL.md",
+    "https://gist.github.com/sonnyparlin/558d486a1d996e42759d3f68dbc384c0"
+  ],
+  "integration_status": "health_and_dry_run_verified_real_candidate_pending",
+  "next_research_hint": "Prefer full BTC strategy with signal exit or static stop/take, explicitly exclude trailing/ROI ladders; no simplification labelled reproduction."
+}

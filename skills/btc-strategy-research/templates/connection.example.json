@@ -1,0 +1,8 @@
+{
+  "host": "8.209.199.155",
+  "user": "root",
+  "identity_file": "REPLACE_WITH_YOUR_PRIVATE_KEY_ABSOLUTE_PATH",
+  "namespace": "environment-69e0f4905ae0a69725e92658",
+  "service_id": "69e0fa56345a78e2a2f79a25",
+  "remote_root": "/home/node/.openclaw/workspace/strategy_lab_v7/sessions"
+}

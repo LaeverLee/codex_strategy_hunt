@@ -1,0 +1,44 @@
+{
+  "submission_id": "REPLACE_WITH_UNIQUE_STABLE_ID",
+  "generator": "Codex",
+  "research_mode": "reproduction",
+  "parent_version": null,
+  "changes": [],
+  "keyword": "REPLACE_WITH_RESEARCH_FAMILY",
+  "title": "REPLACE_WITH_SOURCE_STRATEGY_TITLE",
+  "source": {
+    "url": "https://REPLACE_WITH_ACTUAL_SOURCE",
+    "text": "REPLACE_WITH_COMPLETE_SOURCE_EVIDENCE",
+    "commit": null,
+    "files": []
+  },
+  "translation_zh": "填入忠實中文翻譯、參數、來源對照與改動說明",
+  "source_review": {
+    "approved": false,
+    "reviewer": "Codex-source-comparison",
+    "checks": [],
+    "evidence": []
+  },
+  "spec": {
+    "market": "BTC",
+    "timeframe": "REPLACE_WITH_SUPPORTED_TIMEFRAME",
+    "directions": "long_only",
+    "hypothesis": "REPLACE_WITH_HYPOTHESIS",
+    "entry_rules": "REPLACE_WITH_ENTRY_RULES",
+    "exit_rules": "REPLACE_WITH_EXIT_RULES",
+    "failure_conditions": [],
+    "evidence_quotes": [],
+    "warmup_bars": 50,
+    "signal_exit": true,
+    "risk": {
+      "stop_atr": null,
+      "take_atr": null,
+      "stop_pct": null,
+      "take_pct": null,
+      "atr_period": null,
+      "atr_method": null,
+      "max_hold_bars": null
+    }
+  },
+  "code": "REPLACE_WITH_FULL_GET_SIGNALS_AND_GET_EXITS_PYTHON_CODE"
+}
