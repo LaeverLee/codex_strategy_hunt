@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 import urllib.parse
 import uuid
+from backtest_v6 import reject_fixture
 from quality_policy import validate_result, strict_json
 from strategy_quality import ROOT, RESEARCH, VERSION, atomic_json
 
@@ -14,7 +15,10 @@ def write(backend, table, row, conflict):
     return backend.request(table,'POST',row,'?on_conflict='+conflict,upsert=True)
 
 def sync_discovery(backend,path):
-    report=strict_json(path.read_text()); key=report['run_id']; rid=identity(key)
+    report=strict_json(path.read_text()); reject_fixture(report)
+    if any(a.get('url') == 'integration-fixture-only' or a.get('fixture') for a in report.get('attempts', [])):
+        raise ValueError('Fixture forbidden in formal research ledger')
+    key=report['run_id']; rid=identity(key)
     write(backend,'research_runs',{'id':rid,'run_key':key,'engine':VERSION,'kind':'discovery',
         'status':'completed' if 'model_calls' in report else 'interrupted',
         'configuration':{'keyword':report.get('keyword'),'keyword_id':report.get('keyword_id'),
@@ -31,7 +35,7 @@ def sync_discovery(backend,path):
             'reason':attempt.get('reason'),'details':attempt},'run_id,attempt_key')
 
 def sync_candidate(backend,path):
-    meta=strict_json(path.read_text())
+    meta=strict_json(path.read_text()); reject_fixture(meta)
     write(backend,'research_candidates',{'version':str(meta['version']),'run_id':identity(meta['run_id']),
         'source_hash':meta['source_hash'],'code_hash':meta['code_hash'],
         'signal_hash':meta['signal_hash'],'specification':meta['spec'],
@@ -39,7 +43,7 @@ def sync_candidate(backend,path):
         'source_review':meta.get('source_review',{})},'version')
 
 def sync_result(backend,path):
-    result=strict_json(path.read_text()); validate_result(result); ver=str(result['version'])
+    result=strict_json(path.read_text()); reject_fixture(result); validate_result(result); ver=str(result['version'])
     key='backtest:'+ver+':'+result['code_hash']; rid=identity(key)
     config=result['cost_model']; fingerprint=result['dataset_fingerprint']; did=identity('dataset:'+fingerprint)
     write(backend,'dataset_snapshots',{'id':did,'fingerprint':fingerprint,
@@ -65,7 +69,7 @@ def sync_all(backend):
     candidates=[]
     for folder in ['Strategy','Research_Qualified','Research_Rejected']:
         for path in (ROOT/'pytest'/folder).glob('*_Strategy_Gold.json'):
-            meta=strict_json(path.read_text())
+            meta=strict_json(path.read_text()); reject_fixture(meta)
             if meta.get('engine')==VERSION and meta.get('db_committed'): candidates.append(path)
     paths=sorted(RESEARCH.glob('*.run.json'))+candidates+sorted((ROOT/'pytest/research_results').glob('*.json'))
     for path in paths:

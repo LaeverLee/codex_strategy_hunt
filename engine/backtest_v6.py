@@ -157,11 +157,17 @@ def align_funding(funding,tf):
     buckets=(funding.fundingTime.astype('int64')//TF_MS[tf])*TF_MS[tf]
     return funding.fundingRate.groupby(buckets).sum()
 
+def reject_fixture(record):
+    if record.get('source_url') == 'integration-fixture-only' or record.get('fixture'):
+        raise ValueError('Fixture forbidden in formal research runtime')
+
+
 def run_candidate(path):
     require_inverse()
     meta=strict_json(path.with_suffix(".json").read_text())
     if not meta.get("db_committed"): raise RuntimeError("Discovery DB commit incomplete; preserve candidate for retry")
-    if not meta.get('source_review',{}).get('approved') and meta.get('source_url')!='integration-fixture-only':
+    reject_fixture(meta)
+    if meta.get('source_review',{}).get('approved') is not True:
         raise ValueError('Independent source semantic review missing or failed')
     code=path.read_text(); digest=hashlib.sha256(code.encode()).hexdigest()
     if digest!=meta["code_hash"]: raise ValueError("Candidate changed after source validation")
@@ -226,9 +232,11 @@ def main(legacy):
         try:
             if report_path.exists():
                 result=strict_json(report_path.read_text())
+                reject_fixture(result)
                 if result['code_hash']!=hashlib.sha256(path.read_bytes()).hexdigest():raise ValueError('Candidate changed after cached backtest')
             else:
                 result=run_candidate(path); atomic_json(report_path,result)
+            reject_fixture(strict_json(path.with_suffix('.json').read_text()))
             requalify(result); atomic_json(report_path,result)
             m=result["test"]["metrics"]
             schema={k:m[k] for k in ["return_pct","drawdown_pct","win_rate","profit_factor","trade_count","sharpe_ratio"]}
