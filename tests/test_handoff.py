@@ -11,13 +11,13 @@ policy=importlib.util.module_from_spec(spec);spec.loader.exec_module(policy)
 
 class HandoffTests(unittest.TestCase):
     def test_return_threshold_is_inclusive_and_not_annualized(self):
-        metrics={'return_pct':50.,'trade_count':30,'profit_factor':1.1,'sharpe_ratio':0.5,'drawdown_pct':15.}
+        metrics={'return_currency':'BTC','return_pct':50.,'trade_count':30,'profit_factor':1.1,'sharpe_ratio':0.5,'drawdown_pct':15.}
         self.assertTrue(policy.passes_metrics(metrics))
         metrics['return_pct']=49.9999
         self.assertFalse(policy.passes_metrics(metrics))
 
     def test_other_quality_gates_are_not_bypassed_by_high_return(self):
-        metrics={'return_pct':100.,'trade_count':30,'profit_factor':1.1,'sharpe_ratio':0.5,'drawdown_pct':15.}
+        metrics={'return_currency':'BTC','return_pct':100.,'trade_count':30,'profit_factor':1.1,'sharpe_ratio':0.5,'drawdown_pct':15.}
         for key,value in [('trade_count',29),('drawdown_pct',15.1),('profit_factor',1.09)]:
             with self.subTest(key=key):
                 changed=dict(metrics);changed[key]=value

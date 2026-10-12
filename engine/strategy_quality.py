@@ -1,4 +1,5 @@
 """Source-grounded strategy research and deterministic causality validation."""
+from quality_policy import strict_json
 import ast
 import hashlib
 import html
@@ -27,7 +28,7 @@ def atomic_json(path, value):
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
     temp = path.with_name(path.name + ".tmp")
-    temp.write_text(json.dumps(value, ensure_ascii=False, indent=2), encoding="utf-8")
+    temp.write_text(json.dumps(value, ensure_ascii=False, indent=2, allow_nan=False), encoding="utf-8")
     os.replace(temp, path)
 
 def canonical_url(url):
@@ -137,7 +138,7 @@ def acquire_source(url,hypothesis=""):
 def parse_model_response(text):
     text=text.strip()
     if text.startswith("```"): text="\n".join(text.splitlines()[1:-1])
-    d=json.loads(text)
+    d=strict_json(text)
     if not isinstance(d,dict) or type(d.get("supported")) is not bool:
         raise ValueError("Model response requires a boolean supported field")
     if not d["supported"]:

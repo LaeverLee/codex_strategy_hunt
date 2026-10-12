@@ -4,15 +4,17 @@ import json
 from pathlib import Path
 import urllib.parse
 import uuid
+from quality_policy import validate_result, strict_json
 from strategy_quality import ROOT, RESEARCH, VERSION, atomic_json
 
 def identity(key): return str(uuid.uuid5(uuid.NAMESPACE_URL, 'openclaw-strategy-lab-v7:'+key))
 
 def write(backend, table, row, conflict):
+    json.dumps(row, allow_nan=False)
     return backend.request(table,'POST',row,'?on_conflict='+conflict,upsert=True)
 
 def sync_discovery(backend,path):
-    report=json.loads(path.read_text()); key=report['run_id']; rid=identity(key)
+    report=strict_json(path.read_text()); key=report['run_id']; rid=identity(key)
     write(backend,'research_runs',{'id':rid,'run_key':key,'engine':VERSION,'kind':'discovery',
         'status':'completed' if 'model_calls' in report else 'interrupted',
         'configuration':{'keyword':report.get('keyword'),'keyword_id':report.get('keyword_id'),
@@ -29,7 +31,7 @@ def sync_discovery(backend,path):
             'reason':attempt.get('reason'),'details':attempt},'run_id,attempt_key')
 
 def sync_candidate(backend,path):
-    meta=json.loads(path.read_text())
+    meta=strict_json(path.read_text())
     write(backend,'research_candidates',{'version':str(meta['version']),'run_id':identity(meta['run_id']),
         'source_hash':meta['source_hash'],'code_hash':meta['code_hash'],
         'signal_hash':meta['signal_hash'],'specification':meta['spec'],
@@ -37,11 +39,11 @@ def sync_candidate(backend,path):
         'source_review':meta.get('source_review',{})},'version')
 
 def sync_result(backend,path):
-    result=json.loads(path.read_text()); ver=str(result['version'])
+    result=strict_json(path.read_text()); validate_result(result); ver=str(result['version'])
     key='backtest:'+ver+':'+result['code_hash']; rid=identity(key)
     config=result['cost_model']; fingerprint=result['dataset_fingerprint']; did=identity('dataset:'+fingerprint)
     write(backend,'dataset_snapshots',{'id':did,'fingerprint':fingerprint,
-        'market':result['contract'],'contract_type':'inverse','timeframe':result['spec']['timeframe'],
+        'market':result['contract'],'contract_type':result['cost_model']['contract_type'],'timeframe':result['spec']['timeframe'],
         'first_bar_ms':result['data']['start'],'last_bar_ms':result['data']['end'],
         'bar_count':result['data']['bar_count'],'manifest':result['data']},'fingerprint')
     write(backend,'research_runs',{'id':rid,'run_key':key,'engine':VERSION,'kind':'backtest',
@@ -63,7 +65,7 @@ def sync_all(backend):
     candidates=[]
     for folder in ['Strategy','Research_Qualified','Research_Rejected']:
         for path in (ROOT/'pytest'/folder).glob('*_Strategy_Gold.json'):
-            meta=json.loads(path.read_text())
+            meta=strict_json(path.read_text())
             if meta.get('engine')==VERSION and meta.get('db_committed'): candidates.append(path)
     paths=sorted(RESEARCH.glob('*.run.json'))+candidates+sorted((ROOT/'pytest/research_results').glob('*.json'))
     for path in paths:
@@ -71,7 +73,7 @@ def sync_all(backend):
             continue  # operational rejection remains in compatibility status + local journal
         digest=hashlib.sha256(path.read_bytes()).hexdigest()
         mark=directory/(hashlib.sha256(str(path).encode()).hexdigest()+'.json')
-        if mark.exists() and json.loads(mark.read_text()).get('hash')==digest: continue
+        if mark.exists() and strict_json(mark.read_text()).get('hash')==digest: continue
         if path.name.endswith('.run.json'): sync_discovery(backend,path)
         elif path.name.endswith('_Strategy_Gold.json'): sync_candidate(backend,path)
         else: sync_result(backend,path)

@@ -9,7 +9,7 @@ import urllib.request
 import numpy as np
 import pandas as pd
 from strategy_quality import ROOT, atomic_json, evaluate_isolated, VERSION
-from quality_policy import POLICY, THRESHOLDS, passes_metrics
+from quality_policy import POLICY, THRESHOLDS, passes_metrics, validate_result, strict_json
 
 RESULTS=ROOT/"pytest/research_results"
 TRAIN_END=1704067200000  # 2024-01-01 UTC; fixed before examining candidates
@@ -48,10 +48,16 @@ def atr_series(df,period=14,method="sma"):
         for i in range(period,len(values)):out[i]=(out[i-1]*(period-1)+values[i])/period
     return out
 
+def require_inverse():
+    if os.environ.get('STRATEGY_CONTRACT_TYPE', 'inverse') != 'inverse':
+        raise ValueError('Formal BTC policy only supports inverse BTCUSD contracts')
+
+
 def simulate(df,signals,risk,*,warmup=50,legacy=False,cost_multiplier=1.,start=0,end=None,ledger=False):
     """signal[t] is known at close t; fill at open t+1. Legacy already-shifted signals use t."""
     end=len(df) if end is None else end
-    inverse=os.environ.get("STRATEGY_CONTRACT_TYPE","inverse")=="inverse"
+    require_inverse()
+    inverse=True
     reference=float(df.open.iloc[max(start,warmup,15)])
     capital=5000.; initial=capital; pos=None; equity=[]; trades=[]; funding_paid=0.
     arrays={c:df[c].to_numpy() for c in ["timestamp","open","high","low","close"]}
@@ -123,9 +129,9 @@ def simulate(df,signals,risk,*,warmup=50,legacy=False,cost_multiplier=1.,start=0
 
 def db(legacy,table,method="GET",data=None,query=""):
     base=legacy.SUPABASE_URL.rsplit("/rest/v1/",1)[0]; key=legacy.SUPABASE_KEY
-    req=urllib.request.Request(base+"/rest/v1/"+table+query,data=None if data is None else json.dumps(data).encode(),method=method,headers={"apikey":key,"Authorization":"Bearer "+key,"Content-Type":"application/json","Prefer":"return=representation"})
+    req=urllib.request.Request(base+"/rest/v1/"+table+query,data=None if data is None else json.dumps(data,allow_nan=False).encode(),method=method,headers={"apikey":key,"Authorization":"Bearer "+key,"Content-Type":"application/json","Prefer":"return=representation"})
     with urllib.request.urlopen(req,timeout=20) as r:
-        body=r.read(); return json.loads(body) if body else []
+        body=r.read(); return strict_json(body) if body else []
 
 def status(legacy,version,state,error=None):
     rows=db(legacy,"backtest_version_status",query=f"?version=eq.{version}")
@@ -133,6 +139,7 @@ def status(legacy,version,state,error=None):
     db(legacy,"backtest_version_status","PATCH" if rows else "POST",payload,f"?version=eq.{version}" if rows else "")
 
 def qualify(result):
+    validate_result(result)
     v=result["validation"]["metrics"]; t=result["test"]["metrics"]
     positive=sum(x["metrics"]["return_pct"]>0 for x in result["test_folds"])
     ok=all(passes_metrics(m) for m in [v,t]) and positive>=2 and result["cost_stress"]["metrics"]["return_pct"]>0
@@ -151,7 +158,8 @@ def align_funding(funding,tf):
     return funding.fundingRate.groupby(buckets).sum()
 
 def run_candidate(path):
-    meta=json.loads(path.with_suffix(".json").read_text())
+    require_inverse()
+    meta=strict_json(path.with_suffix(".json").read_text())
     if not meta.get("db_committed"): raise RuntimeError("Discovery DB commit incomplete; preserve candidate for retry")
     if not meta.get('source_review',{}).get('approved') and meta.get('source_url')!='integration-fixture-only':
         raise ValueError('Independent source semantic review missing or failed')
@@ -165,7 +173,7 @@ def run_candidate(path):
         funding=funding.drop_duplicates("fundingTime").sort_values("fundingTime")
         # Funding assessed at bar OPEN to positions carried into that timestamp.
         df["funding_rate"]=df.timestamp.map(align_funding(funding,tf)).fillna(0.)
-        coverage=json.loads(funding_path.with_suffix(".json").read_text())
+        coverage=strict_json(funding_path.with_suffix(".json").read_text())
         funding_included=coverage.get("complete",False) and coverage["start"]<=int(df.timestamp.min()) and coverage["end"]>=int(df.timestamp.max())
     warmup=max(50,meta["spec"]["warmup_bars"])
     a=int(np.searchsorted(df.timestamp.to_numpy(),TRAIN_END)); b=int(np.searchsorted(df.timestamp.to_numpy(),VALIDATION_END))
@@ -181,7 +189,7 @@ def run_candidate(path):
         ('position_fraction','STRATEGY_POSITION_FRACTION','0.3')]}
     result['cost_model'].update(contract_type=os.environ.get('STRATEGY_CONTRACT_TYPE','inverse'),return_currency='BTC',funding_included=funding_included)
     funding_hash=hashlib.sha256(funding_path.read_bytes()).hexdigest() if funding_path.exists() else 'absent'
-    result['data']['funding_hash']=funding_hash
+    result['data'].update(funding_hash=funding_hash,contract_type='inverse',return_currency='BTC')
     result['dataset_fingerprint']=hashlib.sha256((tf+':'+data_report['data_hash']+':'+funding_hash).encode()).hexdigest()
     for name,start,end in [("train",0,a),("validation",a,b),("test",b,len(df))]:
         result[name]=simulate(df,signals,risk,warmup=warmup,start=start,end=end,ledger=True)
@@ -207,7 +215,7 @@ def main(legacy):
         for f in folder.glob("*_Strategy_Gold.py"):
             side=f.with_suffix(".json")
             if not side.exists(): continue
-            meta=json.loads(side.read_text())
+            meta=strict_json(side.read_text())
             if meta.get("engine")==VERSION and meta.get("db_committed"):
                 candidates.append(f)
         candidates.sort(key=lambda f:int(f.name.split("_")[0]))
@@ -217,7 +225,7 @@ def main(legacy):
         db(legacy,"ctrl_manager","PATCH",{"status":"running"},"?module=eq.backtest")
         try:
             if report_path.exists():
-                result=json.loads(report_path.read_text())
+                result=strict_json(report_path.read_text())
                 if result['code_hash']!=hashlib.sha256(path.read_bytes()).hexdigest():raise ValueError('Candidate changed after cached backtest')
             else:
                 result=run_candidate(path); atomic_json(report_path,result)
