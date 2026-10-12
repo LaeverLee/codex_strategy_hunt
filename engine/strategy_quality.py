@@ -9,6 +9,9 @@ import os
 from pathlib import Path
 import socket
 import subprocess
+import selectors
+import signal
+import time
 import sys
 import tempfile
 import urllib.parse
@@ -249,21 +252,87 @@ def causal_check(ns,df):
             if any(not np.array_equal(a[:cutoff],b[:cutoff]) for a,b in zip(baseline,poisoned)): raise ValueError("Future perturbation failed: "+name)
     if not any(normalize_signals(ns["get_signals"](df.copy()),len(df))[i].any() for i in [0,1]): raise ValueError("No entry signals")
 
+WORKER_OUTPUT_LIMIT = 65536
+WORKER_MEMORY_LIMIT = 2 * 1024 ** 3
+
+
+def worker_environment(directory):
+    # Fixed allowlist: never inherit parent credentials, proxies or Python hooks.
+    return {'LANG': 'C.UTF-8', 'LC_ALL': 'C.UTF-8', 'HOME': str(directory),
+            'TMPDIR': str(directory), 'OPENBLAS_NUM_THREADS': '1',
+            'OMP_NUM_THREADS': '1', 'MKL_NUM_THREADS': '1', 'NUMEXPR_NUM_THREADS': '1'}
+
+
+def run_worker(command, directory, timeout):
+    """Bound both output pipes and kill the entire process group on every exit."""
+    process = subprocess.Popen(command, cwd=directory, env=worker_environment(directory),
+                               stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
+                               stderr=subprocess.PIPE, start_new_session=True)
+    total = 0
+    deadline = time.monotonic() + timeout
+    try:
+        with selectors.DefaultSelector() as selector:
+            selector.register(process.stdout, selectors.EVENT_READ)
+            selector.register(process.stderr, selectors.EVENT_READ)
+            while selector.get_map():
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    raise ValueError('Strategy worker timeout')
+                for key, _ in selector.select(min(remaining, .1)):
+                    chunk = os.read(key.fileobj.fileno(), 8192)
+                    if not chunk:
+                        selector.unregister(key.fileobj)
+                    total += len(chunk)
+                    if total > WORKER_OUTPUT_LIMIT:
+                        raise ValueError('Strategy worker output limit exceeded')
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                raise ValueError('Strategy worker timeout')
+            try:
+                returncode = process.wait(timeout=remaining)
+            except subprocess.TimeoutExpired:
+                raise ValueError('Strategy worker timeout') from None
+            if returncode:
+                # Child output can contain sensitive file contents; do not echo it.
+                raise ValueError('Strategy evaluation rejected by worker')
+    finally:
+        try:
+            os.killpg(process.pid, signal.SIGKILL)
+        except ProcessLookupError:
+            pass
+        process.wait()
+        process.stdout.close()
+        process.stderr.close()
+
+
 def evaluate_isolated(code,df,check=False,timeout=45):
-    """Resource-limited worker; this is not an OS security sandbox."""
+    """Resource-limited worker; same UID/filesystem/network, not an OS security sandbox."""
     audit_code(code)
-    with tempfile.TemporaryDirectory(prefix="strategy-eval-") as d:
-        d=Path(d); (d/"code.py").write_text(code,encoding="utf-8"); df.to_pickle(d/"frame.pkl")
-        result=subprocess.run([sys.executable,str(Path(__file__).resolve()),"worker",str(d),str(int(check))],capture_output=True,text=True,timeout=timeout,env={k:v for k,v in os.environ.items() if k not in {"MINIMAX_API_KEY","TAVILY_API_KEY","SUPABASE_KEY","SUPABASE_SERVICE_ROLE_KEY"}})
-        if result.returncode: raise ValueError("Strategy evaluation rejected: "+result.stderr[-1200:])
-        with np.load(d/"signals.npz") as arrays: return tuple(arrays[k].copy() for k in ["ls","ss","le","se"])
+    with tempfile.TemporaryDirectory(prefix="strategy-eval-") as directory:
+        d=Path(directory); (d/"code.py").write_text(code,encoding="utf-8"); df.to_pickle(d/"frame.pkl")
+        run_worker([sys.executable,str(Path(__file__).resolve()),"worker",str(d),str(int(check))], d, timeout)
+        path = d/"signals.npz"
+        if not path.exists() or path.stat().st_size > 4 * len(df) + 8192:
+            raise ValueError('Invalid worker signal artifact size')
+        with np.load(path, allow_pickle=False) as arrays:
+            if set(arrays.files) != {'ls', 'ss', 'le', 'se'}:
+                raise ValueError('Invalid worker signal keys')
+            result = tuple(arrays[k].copy() for k in ['ls', 'ss', 'le', 'se'])
+        if any(a.dtype != np.bool_ or a.shape != (len(df),) for a in result):
+            raise ValueError('Worker must return four boolean vectors')
+        return result
 
 def worker(directory,check):
     try:
         import resource
+        resource.setrlimit(resource.RLIMIT_AS,(WORKER_MEMORY_LIMIT,WORKER_MEMORY_LIMIT))
+        resource.setrlimit(resource.RLIMIT_NPROC,(32,32))
+        resource.setrlimit(resource.RLIMIT_CORE,(0,0))
+        resource.setrlimit(resource.RLIMIT_NOFILE,(64,64))
         resource.setrlimit(resource.RLIMIT_CPU,(35,40))
         resource.setrlimit(resource.RLIMIT_FSIZE,(100_000_000,100_000_000))
-    except ImportError: pass
+    except ImportError:
+        raise RuntimeError("Worker resource limits require Linux")
     d=Path(directory); ns=restricted_module((d/"code.py").read_text()); df=pd.read_pickle(d/"frame.pkl")
     if check: causal_check(ns,df)
     ls,ss=normalize_signals(ns["get_signals"](df.copy()),len(df)); le,se=normalize_signals(ns["get_exits"](df.copy()),len(df),True)
