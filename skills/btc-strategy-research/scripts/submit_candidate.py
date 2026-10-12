@@ -8,6 +8,46 @@ from pathlib import Path
 import sys
 
 
+def retry_state(root, saved, content_hash, code_hash, backend):
+    """Read evidence under both producer and consumer locks; never republish a retry."""
+    if saved.get('content_hash') != content_hash:
+        raise ValueError('submission_id already belongs to different content')
+    version = saved.get('version')
+    if type(version) is not int or version < 1:
+        raise ValueError('Invalid receipt version')
+    found = []
+    for folder in ['Strategy', 'Research_Qualified', 'Research_Rejected']:
+        path = root / 'pytest' / folder / f'{version}_Strategy_Gold.py'
+        side = path.with_suffix('.json')
+        if path.exists() or side.exists():
+            if not path.exists() or not side.exists():
+                raise RuntimeError('Incomplete candidate evidence; reconciliation required')
+            meta = json.loads(side.read_text())
+            if meta.get('code_hash') != code_hash or hashlib.sha256(path.read_bytes()).hexdigest() != code_hash:
+                raise ValueError('Retry candidate hash conflict')
+            found.append((folder, meta))
+    result = root / 'pytest/research_results' / f'{version}.json'
+    rejected = result.with_name(f'{version}.rejected.json')
+    terminal = result.exists() or rejected.exists()
+    if result.exists() and json.loads(result.read_text()).get('code_hash') != code_hash:
+        raise ValueError('Retry result hash conflict')
+    rows = backend.request('research_candidates', query=f'?version=eq.{version}&limit=1')
+    if rows and rows[0].get('code_hash') != code_hash:
+        raise ValueError('Retry DB candidate hash conflict')
+    states = backend.request('backtest_version_status', query=f'?version=eq.{version}&limit=1')
+    terminal = terminal or any(x.get('status') in {'success', 'tested_failed'} for x in states)
+    if len(found) > 1:
+        raise RuntimeError('Conflicting queue/archive evidence; reconciliation required')
+    if terminal or found and found[0][0] != 'Strategy':
+        if found and found[0][0] == 'Strategy':
+            raise RuntimeError('Terminal candidate still in queue; reconciliation required')
+        return {'submitted': True, 'queued': False, 'queued_this_call': False,
+                'current_state': 'completed', 'version': version, 'already_submitted': True}
+    if found and found[0][1].get('db_committed') is True and rows:
+        return {'submitted': True, 'queued': True, 'queued_this_call': False,
+                'current_state': 'queued', 'version': version, 'already_submitted': True}
+    raise RuntimeError('Ambiguous or interrupted submission; reconciliation required, retry cannot republish')
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--root', required=True)
@@ -65,21 +105,19 @@ def main():
             raise ValueError('Parent candidate must be registered before variant')
     receipts = root / 'codex_submissions'
     receipts.mkdir(exist_ok=True)
-    with open('/tmp/strategy_lab_v7_hunt.lock', 'a') as lock:
+    with open('/tmp/strategy_lab_v7_hunt.lock', 'a') as lock, open('/tmp/backtest_research_v7.lock', 'a') as consumer_lock:
         try:
             fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            fcntl.flock(consumer_lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
         except BlockingIOError:
             raise RuntimeError('Discovery lock occupied; retry later without deleting lock')
         receipt = receipts / (key + '.json')
         if receipt.exists():
             saved = json.loads(receipt.read_text())
-            if saved['content_hash'] != content_hash:
-                raise ValueError('submission_id already belongs to different content')
-            if saved.get('queued'):
-                sync_all(backend)
-                print(json.dumps({'queued': True, 'version': saved['version'], 'already_submitted': True}))
-                return
-            version = saved['version']
+            state = retry_state(root, saved, content_hash,
+                                hashlib.sha256((bundle['code'].rstrip() + '\n').encode()).hexdigest(), backend)
+            print(json.dumps(state))
+            return
         else:
             # Check behavior against prior approved candidates; validation data only.
             for folder in ['Strategy', 'Research_Qualified', 'Research_Rejected']:
