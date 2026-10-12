@@ -31,3 +31,19 @@ class RetryTests(unittest.TestCase):
             for saved in [{'version': 2, 'content_hash': 'same'}, {'version': 2, 'content_hash': 'different'}, {'content_hash': 'same'}]:
                 with self.assertRaises((RuntimeError, ValueError)):
                     submit.retry_state(Path(d), saved, 'same', 'hash', Backend())
+
+    def test_receipt_false_result_finished_never_requeues(self):
+        with tempfile.TemporaryDirectory() as d:
+            root=Path(d); path=root/'pytest/research_results/2.json';path.parent.mkdir(parents=True)
+            digest=hashlib.sha256(b'code\n').hexdigest();path.write_text(json.dumps({'code_hash':digest}))
+            result=submit.retry_state(root,{'version':2,'content_hash':'same','queued':False},'same',digest,Backend())
+            self.assertEqual(result['current_state'],'completed')
+            self.assertFalse(result['queued'])
+            self.assertFalse((root/'pytest/Strategy').exists())
+    def test_terminal_and_queue_conflict_requires_reconciliation(self):
+        with tempfile.TemporaryDirectory() as d:
+            root=Path(d);p=root/'pytest/Strategy/2_Strategy_Gold.py';p.parent.mkdir(parents=True);p.write_bytes(b'code\n')
+            digest=hashlib.sha256(p.read_bytes()).hexdigest();p.with_suffix('.json').write_text(json.dumps({'code_hash':digest,'db_committed':True}))
+            r=root/'pytest/research_results/2.json';r.parent.mkdir(parents=True);r.write_text(json.dumps({'code_hash':digest}))
+            with self.assertRaisesRegex(RuntimeError,'Terminal'):
+                submit.retry_state(root,{'version':2,'content_hash':'same'},'same',digest,Backend())

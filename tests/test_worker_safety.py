@@ -43,3 +43,14 @@ def get_exits(df):
                 if not stat.exists() or stat.read_text().split()[2]=='Z': break
                 time.sleep(.05)
             else: self.fail('Descendant still running')
+
+    def test_memory_exhaustion_is_rejected(self):
+        code = "import numpy as np\ndef get_signals(df):\n    return np.ones(3_000_000_000), np.ones(3_000_000_000)\ndef get_exits(df):\n    return df.close > 0, df.close < 0\n"
+        with self.assertRaisesRegex(ValueError, 'rejected'):
+            sq.evaluate_isolated(code, pd.DataFrame({'close':[1.,2.]}), timeout=5)
+    def test_malformed_worker_output_is_rejected(self):
+        def fake(command,directory,timeout):
+            np.savez(Path(directory)/'signals.npz',ls=np.array([1,0]),ss=np.array([False,False]),le=np.array([False,False]),se=np.array([False,False]))
+        code = "def get_signals(df):\n    return df.close > 0, df.close < 0\ndef get_exits(df):\n    return df.close < 0, df.close > 0\n"
+        with patch.object(sq,'run_worker',side_effect=fake), self.assertRaisesRegex(ValueError, 'boolean'):
+            sq.evaluate_isolated(code,pd.DataFrame({'close':[1.,2.]}))
