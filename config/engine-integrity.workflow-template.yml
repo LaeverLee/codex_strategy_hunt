@@ -1,0 +1,11 @@
+name: Common engine integrity
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  integrity:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify common engine manifest
+        run: sha256sum --check config/common-engine.sha256
